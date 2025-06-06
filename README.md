@@ -1,22 +1,22 @@
-### 2. Loan Approval Prediction Pipeline  
-<span style="color: #9e9e9e;">*(Loan Approval.zip → Tarea 2/)*</span>
+## Loan Approval Prediction Pipeline  
 
 **🔗 Files**:  
-- [`loan_approval_dataset.csv`](./Tarea%202/loan_approval_dataset.csv)  
-- [`modelo_entrenamiento.py`](./Tarea%202/modelo_entrenamiento.py)  
-- [`loan_model.joblib`](./Tarea%202/loan_model.joblib)  
-- [`loan_columns.joblib`](./Tarea%202/loan_columns.joblib)  
-- [`ml_server.py`](./Tarea%202/ml_server.py)  
-- [`frontend.py`](./Tarea%202/frontend.py)  
+- [`loan_approval_dataset.csv`](./loan_approval_dataset.csv)  
+- [`modelo_entrenamiento.py`](./modelo_entrenamiento.py)  
+- [`loan_model.joblib`](./loan_model.joblib)  
+- [`loan_columns.joblib`](./loan_columns.joblib)  
+- [`ml_server.py`](./ml_server.py)  
+- [`frontend.py`](./frontend.py)  
 
 #### 📚 Overview
-- **Objective**: Design an end-to-end machine learning pipeline to predict whether a loan application is approved or denied, using applicant financial and demographic features. Furthermore, deploy the model as a REST API and provide a Streamlit-based web interface for end users.  
+- **Objective**: Design an end-to-end machine learning pipeline to predict whether a loan application is approved or denied, using applicant personal financial features. Furthermore, deploy the model as a REST API and provide a Streamlit-based web interface for end users.
+- **Description**: This application evaluates an individual's loan application by analyzing personal and financial details to determine loan approval eligibility. It uses a machine learning model trained on over 4,000 real-world banking records from India, achieving 98% predictive accuracy. One of the most important features is the applicant’s CIBIL score (300 = poor creditworthiness, 900 = excellent creditworthiness). 
 - **Dataset**:  
   - **“loan_approval_dataset.csv”** (collected from financial institution records):  
     - **Features**:  
       1. `no_of_dependents` (integer): Number of dependents of the applicant.  
-      2. `education` (categorical): “Nivel Maestría” or “Sin Nivel de Maestría”.  
-      3. `self_employed` (categorical): “Si” or “No”.  
+      2. `education` (categorical): “Graduate” or “Not Graduate”.  
+      3. `self_employed` (categorical): “Yes” or “No”.  
       4. `income_annum` (float): Applicant’s annual income (USD).  
       5. `loan_amount` (float): Requested loan amount (USD).  
       6. `loan_term` (float): Requested loan duration in months.  
@@ -61,7 +61,7 @@
 6. **Evaluation**  
    - Predicted `y_pred = clf.predict(X_test)`.  
    - Generated classification metrics (`classification_report`) including **precision**, **recall**, **F1-score**, and **accuracy** per class.  
-   - Observed strong performance (e.g., F1-scores > 0.85 on both classes) indicating robust generalization on held-out data.  
+   - Observed strong performance with overall F1 score of 0.98 indicating robust generalization on held-out data.  
 
 7. **Artifact Serialization**  
    - **Model**: Saved final fitted pipeline as `loan_model.joblib` using `joblib.dump()`.  
@@ -79,13 +79,13 @@
 9. **Web Front-End (Streamlit)**  
    - Created `frontend.py` as a user interface:  
      - Users input values for each predictor via Streamlit widgets (e.g., `st.number_input`, `st.selectbox`).  
-     - On clicking “Predecir”, sends a `POST` request to `http://127.0.0.1:8000/predict` with JSON payload.  
+     - On clicking “Predict”, sends a `POST` request to `http://127.0.0.1:8000/predict` with JSON payload.  
      - Displays predicted `loan_status` with color-coded success/error feedback.  
    - **Future Work**:  
      - Host Streamlit app on a cloud platform (Heroku, AWS, etc.) to allow remote users to assess loan applications in real time.  
 
 #### 🎯 Results & Takeaways
-- **Model Performance**: Random Forest classifier achieved high precision and recall for both “Approved” and “Denied” classes, indicating minimal bias toward either outcome.  
+- **Model Performance**: Overall F1 score of 0.98. Random Forest classifier achieved high precision and recall for both “Approved” and “Denied” classes, indicating minimal bias toward either outcome.  
 - **Feature Importance**:  
   - Top predictive features included **CIBIL score**, **annual income**, and **loan amount**, aligning with domain knowledge of credit risk assessment.  
   - Asset values (residential, commercial, bank) provided additional signal for applicant solvency.  
@@ -104,4 +104,13 @@
 #### 🌐 Practical Application
 - **Credit Underwriting**: Automate preliminary loan decisioning to accelerate turnaround and minimize default risk.  
 - **Risk Management**: Provide explainable feature importances to credit officers for auditing and regulatory compliance.  
-- **Operational Efficiency**: Integrate with existing ERP/CRM systems (e.g., PeopleSoft, QuickBooks) to streamline data flow.  
+- **Operational Efficiency**: Integrate with existing ERP/CRM systems (e.g., PeopleSoft, QuickBooks) to streamline data flow.
+
+#### 💻 Interace
+<br/>
+<img src="https://i.imgur.com/IkjQxFL.png" width="1000" alt="Application Page 1"/>
+<br />
+<br />
+<img src="https://i.imgur.com/3u25rXp.png" width="1000" alt="Application Page 1"/>
+<br />
+<br />
