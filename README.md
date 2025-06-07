@@ -94,7 +94,7 @@
   - Reduces manual review time and allows credit officers to focus on exceptions and appeals.  
 ---
 #### 🔧 Technologies Used
-- **Python 3.x**  
+- **Python 3.12**  
 - **pandas & NumPy** for data ingestion and manipulation  
 - **scikit-learn** for preprocessing, model training, and evaluation  
 - **Joblib** for artifact serialization  
