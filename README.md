@@ -7,7 +7,7 @@
 - [`loan_columns.joblib`](./loan_columns.joblib)  
 - [`ml_server.py`](./ml_server.py)  
 - [`frontend.py`](./frontend.py)  
-
+---
 #### 📚 Overview
 - **Objective**: Design an end-to-end machine learning pipeline to predict whether a loan application is approved or denied, using applicant personal financial features. Furthermore, deploy the model as a REST API and provide a Streamlit-based web interface for end users.
 - **Description**: This application evaluates an individual's loan application by analyzing personal and financial details to determine loan approval eligibility. It uses a machine learning model trained on over 4,000 real-world banking records from India, achieving 98% predictive accuracy. One of the most important features is the applicant’s CIBIL score (300 = poor creditworthiness, 900 = excellent creditworthiness). 
@@ -26,7 +26,7 @@
       10. `luxury_assets_value` (float): Value of luxury assets (USD).  
       11. `bank_asset_value` (float): Total bank assets (USD).  
     - **Target**: `loan_status` (binary categorical: “Approved” or “Denied”).  
-
+---
 #### 🧠 Methodology
 1. **Data Loading & Cleaning**  
    - Loaded raw CSV via `pd.read_csv("loan_approval_dataset.csv")`.  
@@ -83,7 +83,7 @@
      - Displays predicted `loan_status` with color-coded success/error feedback.  
    - **Future Work**:  
      - Host Streamlit app on a cloud platform (Heroku, AWS, etc.) to allow remote users to assess loan applications in real time.  
-
+---
 #### 🎯 Results & Takeaways
 - **Model Performance**: Overall F1 score of 0.98. Random Forest classifier achieved high precision and recall for both “Approved” and “Denied” classes, indicating minimal bias toward either outcome.  
 - **Feature Importance**:  
@@ -92,7 +92,7 @@
 - **Operational Value**:  
   - Financial institutions can embed this pipeline in their loan origination systems to rapidly triage low-risk candidates and flag high-risk applications.  
   - Reduces manual review time and allows credit officers to focus on exceptions and appeals.  
-
+---
 #### 🔧 Technologies Used
 - **Python 3.x**  
 - **pandas & NumPy** for data ingestion and manipulation  
@@ -100,17 +100,15 @@
 - **Joblib** for artifact serialization  
 - **FastAPI** for RESTful model serving  
 - **Streamlit** for interactive front-end development  
-
+---
 #### 🌐 Practical Application
 - **Credit Underwriting**: Automate preliminary loan decisioning to accelerate turnaround and minimize default risk.  
 - **Risk Management**: Provide explainable feature importances to credit officers for auditing and regulatory compliance.  
 - **Operational Efficiency**: Integrate with existing ERP/CRM systems (e.g., PeopleSoft, QuickBooks) to streamline data flow.
-
+---
 #### 💻 Interace
 <br/>
 <img src="https://i.imgur.com/IkjQxFL.png" width="1000" alt="Application Page 1"/>
-<br />
-<br />
 <img src="https://i.imgur.com/3u25rXp.png" width="1000" alt="Application Page 1"/>
 <br />
-<br />
+
