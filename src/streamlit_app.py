@@ -331,7 +331,7 @@ def render_header():
 # PREDICTOR TAB
 
 def render_predictor_tab():
-    with st.expander("📋 How to Use This Tool", expanded=False):
+    with st.expander("ℹ️ How to Use This Tool", expanded=False):
         st.markdown("""
         1. **Enter applicant details:** Fill in personal information including education level and employment status.
         2. **Provide financial data:** Input accurate income, loan amount, and CIBIL score (most influential factor).
@@ -858,6 +858,7 @@ def render_documentation_tab():
         <p style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 6px;">✓ CURRENT: Standalone Mode</p>
         <p style="font-size: 13px; color: #94a3b8; margin: 0;">
             This app runs the ML model directly within Streamlit using cached model loading. 
+            No external API server required — ideal for demos and portfolio showcases.
         </p>
     </div>
     """, unsafe_allow_html=True)
