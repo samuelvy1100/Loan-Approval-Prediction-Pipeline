@@ -3,11 +3,8 @@ Loan Approval Prediction - Professional Streamlit Interface
 Standalone web interface for the loan approval prediction system.
 Dark theme design with three-tab navigation.
 
-Deployment: Streamlit Community Cloud
-Repository: github.com/yourusername/loan-approval-pipeline
-
 Author: Samuel Villarreal
-Version: 2.1.0 (Standalone)
+Version: 2.1.0 (Standalone for Streamlit Cloud)
 """
 
 import streamlit as st
@@ -27,16 +24,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# =============================================================================
 # MODEL LOADING (Cached for performance)
-# =============================================================================
 
 @st.cache_resource
 def load_model():
     """Load the trained model pipeline. Cached to avoid reloading on each interaction."""
     try:
-        model_path = Path(__file__).parent / "loan_model.joblib"
-        columns_path = Path(__file__).parent / "loan_columns.joblib"
+        # Model files are in the same directory as this script (src/)
+        base_path = Path(__file__).parent
+        model_path = base_path / "loan_model.joblib"
+        columns_path = base_path / "loan_columns.joblib"
         
         pipeline = joblib.load(model_path)
         columns = joblib.load(columns_path)
@@ -49,6 +46,8 @@ def load_model():
 
 # Load model at startup
 MODEL_PIPELINE, MODEL_COLUMNS, MODEL_ERROR = load_model()
+
+# CONFIGURATION
 
 EDUCATION_OPTIONS = {
     "Graduate (Master's or higher)": " Graduate",
@@ -249,7 +248,7 @@ def validate_inputs(data: Dict[str, Any]) -> List[str]:
 def predict_loan_approval(data: Dict[str, Any]) -> Tuple[Optional[Dict], Optional[str]]:
     """
     Make prediction using the loaded model directly.
-    No external API call needed - runs entirely within Streamlit.
+    Runs entirely within Streamlit.
     """
     if MODEL_PIPELINE is None:
         return None, MODEL_ERROR or "Model not loaded"
