@@ -1,0 +1,73 @@
+2025-12-29 16:55:12,312 - INFO - ============================================================
+2025-12-29 16:55:12,313 - INFO - LOAN APPROVAL MODEL TRAINING PIPELINE
+2025-12-29 16:55:12,313 - INFO - ============================================================
+2025-12-29 16:55:12,313 - INFO - Loading data from: ../data/loan_approval_dataset.csv
+2025-12-29 16:55:12,317 - INFO - Loaded 4269 records with 13 columns
+2025-12-29 16:55:12,318 - INFO - Target distribution:
+loan_status
+Approved    2656
+Rejected    1613
+Name: count, dtype: int64
+2025-12-29 16:55:12,319 - INFO - Missing values:
+no_of_dependents            0
+income_annum                0
+loan_amount                 0
+loan_term                   0
+cibil_score                 0
+residential_assets_value    0
+commercial_assets_value     0
+luxury_assets_value         0
+bank_asset_value            0
+education                   0
+self_employed               0
+loan_status                 0
+dtype: int64
+2025-12-29 16:55:12,319 - INFO - Feature matrix shape: (4269, 11)
+2025-12-29 16:55:12,319 - INFO - Target shape: (4269,)
+2025-12-29 16:55:12,321 - INFO - Train set: 3415 samples
+2025-12-29 16:55:12,321 - INFO - Test set:  854 samples
+2025-12-29 16:55:12,321 - INFO - Model pipeline constructed successfully
+2025-12-29 16:55:12,321 - INFO - Starting model training...
+2025-12-29 16:55:12,433 - INFO - Training completed in 0.11 seconds
+2025-12-29 16:55:12,433 - INFO - Evaluating model performance...
+2025-12-29 16:55:13,008 - INFO - 
+============================================================
+2025-12-29 16:55:13,008 - INFO - MODEL EVALUATION RESULTS
+2025-12-29 16:55:13,008 - INFO - ============================================================
+2025-12-29 16:55:13,008 - INFO - Accuracy:  0.9836
+2025-12-29 16:55:13,008 - INFO - Precision: 0.9836
+2025-12-29 16:55:13,008 - INFO - Recall:    0.9836
+2025-12-29 16:55:13,008 - INFO - F1-Score:  0.9836
+2025-12-29 16:55:13,008 - INFO - ROC-AUC:   0.9972
+2025-12-29 16:55:13,008 - INFO - CV Mean:   0.9760 (+/- 0.0075)
+2025-12-29 16:55:13,008 - INFO - 
+              precision    recall  f1-score   support
+
+    Approved       0.98      0.99      0.99       531
+    Rejected       0.99      0.97      0.98       323
+
+    accuracy                           0.98       854
+   macro avg       0.98      0.98      0.98       854
+weighted avg       0.98      0.98      0.98       854
+
+2025-12-29 16:55:13,008 - INFO - ============================================================
+
+2025-12-29 16:55:13,022 - INFO - 
+Feature Importances:
+2025-12-29 16:55:13,022 - INFO - ----------------------------------------
+2025-12-29 16:55:13,022 - INFO - cibil_score                         0.8274
+2025-12-29 16:55:13,022 - INFO - loan_term                           0.0509
+2025-12-29 16:55:13,022 - INFO - loan_amount                         0.0287
+2025-12-29 16:55:13,022 - INFO - luxury_assets_value                 0.0171
+2025-12-29 16:55:13,022 - INFO - income_annum                        0.0170
+2025-12-29 16:55:13,023 - INFO - residential_assets_value            0.0159
+2025-12-29 16:55:13,023 - INFO - commercial_assets_value             0.0150
+2025-12-29 16:55:13,023 - INFO - bank_asset_value                    0.0141
+2025-12-29 16:55:13,023 - INFO - no_of_dependents                    0.0074
+2025-12-29 16:55:13,023 - INFO - self_employed_ No                   0.0019
+2025-12-29 16:55:13,035 - INFO - Model saved to: loan_model.joblib
+2025-12-29 16:55:13,035 - INFO - Column names saved to: loan_columns.joblib
+2025-12-29 16:55:13,036 - INFO - Metrics saved to: model_metrics.json
+2025-12-29 16:55:13,036 - INFO - ============================================================
+2025-12-29 16:55:13,036 - INFO - TRAINING COMPLETE
+2025-12-29 16:55:13,036 - INFO - ============================================================
