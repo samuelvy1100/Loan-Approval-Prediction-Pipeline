@@ -24,7 +24,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# =============================================================================
 # MODEL LOADING (Cached for performance)
+# =============================================================================
 
 @st.cache_resource
 def load_model():
@@ -248,7 +250,7 @@ def validate_inputs(data: Dict[str, Any]) -> List[str]:
 def predict_loan_approval(data: Dict[str, Any]) -> Tuple[Optional[Dict], Optional[str]]:
     """
     Make prediction using the loaded model directly.
-    Runs entirely within Streamlit.
+    No external API call needed - runs entirely within Streamlit.
     """
     if MODEL_PIPELINE is None:
         return None, MODEL_ERROR or "Model not loaded"
@@ -840,23 +842,69 @@ def render_documentation_tab():
         </div>
         """, unsafe_allow_html=True)
     
-    # API Endpoints
-    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
-                padding: 28px; margin-bottom: 24px;">
+    # Deployment Architecture - Using simpler HTML that Streamlit renders correctly
+    st.markdown("""
+    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); padding: 28px; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #22c55e 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">📦</div>
-            <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">API Endpoints</span>
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #22c55e 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">🚀</div>
+            <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Deployment Architecture</span>
         </div>
-        <div style="background: rgba(15, 39, 68, 0.6); padding: 20px; border-radius: 12px;">
-            <p><span style="background: #22c55e; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; color: white;">GET</span>
-               <code style="color: #90cdf4; margin-left: 12px;">/</code> - API welcome message</p>
-            <p><span style="background: #22c55e; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; color: white;">GET</span>
-               <code style="color: #90cdf4; margin-left: 12px;">/health</code> - Health check with model status</p>
-            <p><span style="background: #3182ce; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; color: white;">POST</span>
-               <code style="color: #90cdf4; margin-left: 12px;">/predict</code> - Generate loan prediction</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Current Mode Box
+    st.markdown("""
+    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; border-radius: 10px; margin-bottom: 16px;">
+        <p style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 6px;">✓ CURRENT: Standalone Mode</p>
+        <p style="font-size: 13px; color: #94a3b8; margin: 0;">
+            This app runs the ML model directly within Streamlit using cached model loading. 
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Optional API Mode Box
+    st.markdown("""
+    <div style="background: rgba(99, 179, 237, 0.1); border: 1px solid rgba(99, 179, 237, 0.2); padding: 16px; border-radius: 10px; margin-bottom: 24px;">
+        <p style="font-size: 13px; color: #63b3ed; font-weight: 600; margin-bottom: 10px;">⚡ OPTIONAL: REST API Mode</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">
+            For enterprise integration, mobile apps, or microservices architecture, 
+            deploy the included FastAPI server (api_server.py) separately.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # API Endpoints using Streamlit columns for cleaner rendering
+    ep_col1, ep_col2, ep_col3 = st.columns(3)
+    with ep_col1:
+        st.markdown("""
+        <div style="background: rgba(15, 39, 68, 0.6); padding: 16px; border-radius: 8px; text-align: center;">
+            <span style="background: #22c55e; padding: 4px 12px; border-radius: 5px; font-size: 11px; font-weight: 700; color: white;">GET</span>
+            <p style="color: #90cdf4; font-family: monospace; margin: 10px 0 5px 0;">/</p>
+            <p style="color: #64748b; font-size: 11px; margin: 0;">API welcome</p>
         </div>
-    </div>""", unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    with ep_col2:
+        st.markdown("""
+        <div style="background: rgba(15, 39, 68, 0.6); padding: 16px; border-radius: 8px; text-align: center;">
+            <span style="background: #22c55e; padding: 4px 12px; border-radius: 5px; font-size: 11px; font-weight: 700; color: white;">GET</span>
+            <p style="color: #90cdf4; font-family: monospace; margin: 10px 0 5px 0;">/health</p>
+            <p style="color: #64748b; font-size: 11px; margin: 0;">Health check</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with ep_col3:
+        st.markdown("""
+        <div style="background: rgba(15, 39, 68, 0.6); padding: 16px; border-radius: 8px; text-align: center;">
+            <span style="background: #3182ce; padding: 4px 12px; border-radius: 5px; font-size: 11px; font-weight: 700; color: white;">POST</span>
+            <p style="color: #90cdf4; font-family: monospace; margin: 10px 0 5px 0;">/predict</p>
+            <p style="color: #64748b; font-size: 11px; margin: 0;">Get prediction</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 12px;">
+        Deploy API on Railway, Render, or AWS for production use cases requiring HTTP access.
+    </p>
+    """, unsafe_allow_html=True)
     
     # Model Performance
     st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
