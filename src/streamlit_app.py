@@ -331,7 +331,7 @@ def render_header():
 # PREDICTOR TAB
 
 def render_predictor_tab():
-    with st.expander("ℹ️ How to Use This Tool", expanded=False):
+    with st.expander("How to Use This Tool", expanded=False):
         st.markdown("""
         1. **Enter applicant details:** Fill in personal information including education level and employment status.
         2. **Provide financial data:** Input accurate income, loan amount, and CIBIL score (most influential factor).
@@ -397,7 +397,7 @@ def render_predictor_tab():
         }
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔮 Analyze Application", use_container_width=True):
+        if st.button("Analyze Application", use_container_width=True):
             errors = validate_inputs(form_data)
             if errors:
                 for error in errors:
@@ -1011,7 +1011,7 @@ def main():
     apply_custom_css()
     render_header()
     
-    tab1, tab2, tab3 = st.tabs(["🔮 Analysis", "📊 Features", "📚 Documentation"])
+    tab1, tab2, tab3 = st.tabs(["Analysis", "Features", "Documentation"])
     
     with tab1:
         render_predictor_tab()
