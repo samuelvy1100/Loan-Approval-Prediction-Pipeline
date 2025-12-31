@@ -1062,7 +1062,7 @@ def main():
     st.markdown("""
     <div style="text-align: center; margin-top: 60px; padding: 30px; border-top: 1px solid rgba(99, 179, 237, 0.2);">
         <p style="font-size: 14px; color: #64748b;">
-            © 2025 Samuel Villarreal. All Rights Reserved.<br>
+            © 2025 Samuel Villarreal.<br>
             <a href="https://github.com/samuelvy1100/Loan-Approval-Prediction-Pipeline" target="_blank" style="color: #63b3ed; text-decoration: none;">
                 View Project on GitHub
             </a>
