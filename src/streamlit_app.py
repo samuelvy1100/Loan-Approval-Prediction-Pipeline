@@ -4,7 +4,6 @@ Standalone web interface for the loan approval prediction system.
 Dark theme design with three-tab navigation.
 
 Author: Samuel Villarreal
-Version: 2.1.0 (Standalone for Streamlit Cloud)
 """
 
 import streamlit as st
@@ -24,9 +23,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# =============================================================================
 # MODEL LOADING (Cached for performance)
-# =============================================================================
 
 @st.cache_resource
 def load_model():
@@ -842,7 +839,7 @@ def render_documentation_tab():
         </div>
         """, unsafe_allow_html=True)
     
-    # Deployment Architecture - Using simpler HTML that Streamlit renders correctly
+    # Deployment Architecture 
     st.markdown("""
     <div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); padding: 28px; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
