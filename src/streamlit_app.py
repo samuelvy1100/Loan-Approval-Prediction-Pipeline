@@ -858,7 +858,6 @@ def render_documentation_tab():
         <p style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 6px;">✓ CURRENT: Standalone Mode</p>
         <p style="font-size: 13px; color: #94a3b8; margin: 0;">
             This app runs the ML model directly within Streamlit using cached model loading. 
-            No external API server required — ideal for demos and portfolio showcases.
         </p>
     </div>
     """, unsafe_allow_html=True)
