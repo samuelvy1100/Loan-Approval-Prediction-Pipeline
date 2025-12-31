@@ -1,114 +1,83 @@
-## Loan Approval Prediction Pipeline  
+# Loan Approval Prediction Pipeline
 
-**🔗 Files**:  
-- [`loan_approval_dataset.csv`](./loan_approval_dataset.csv)  
-- [`modelo_entrenamiento.py`](./modelo_entrenamiento.py)  
-- [`loan_model.joblib`](./loan_model.joblib)  
-- [`loan_columns.joblib`](./loan_columns.joblib)  
-- [`ml_server.py`](./ml_server.py)  
-- [`frontend.py`](./frontend.py)  
+This repository contains an end-to-end Machine Learning pipeline designed to predict loan approval outcomes using applicant financial and demographic data. It features a robust Random Forest training workflow and a professional Streamlit interface for real-time risk assessment.
+
+**Live Demo:** [View Application on Streamlit](https://machine-learning-loan-approval-prediction-pipeline.streamlit.app/)
+
 ---
-#### 📚 Overview
-- **Objective**: Design an end-to-end machine learning pipeline to predict whether a loan application is approved or denied, using applicant personal financial features. Furthermore, deploy the model as a REST API and provide a Streamlit-based web interface for end users.
-- **Description**: This application evaluates an individual's loan application by analyzing personal and financial details to determine loan approval eligibility. It uses a machine learning model trained on over 4,000 real-world banking records from India, achieving 98% predictive accuracy. One of the most important features is the applicant’s CIBIL score (300 = poor creditworthiness, 900 = excellent creditworthiness). 
-- **Dataset**:  
-  - **“loan_approval_dataset.csv”** (collected from financial institution records):  
-    - **Features**:  
-      1. `no_of_dependents` (integer): Number of dependents of the applicant.  
-      2. `education` (categorical): “Graduate” or “Not Graduate”.  
-      3. `self_employed` (categorical): “Yes” or “No”.  
-      4. `income_annum` (float): Applicant’s annual income (USD).  
-      5. `loan_amount` (float): Requested loan amount (USD).  
-      6. `loan_term` (float): Requested loan duration in months.  
-      7. `cibil_score` (float): Creditworthiness score (CIBIL).  
-      8. `residential_assets_value` (float): Value of owned residential assets (USD).  
-      9. `commercial_assets_value` (float): Value of owned commercial assets (USD).  
-      10. `luxury_assets_value` (float): Value of luxury assets (USD).  
-      11. `bank_asset_value` (float): Total bank assets (USD).  
-    - **Target**: `loan_status` (binary categorical: “Approved” or “Denied”).  
+
+## Project Overview
+
+This project demonstrates the transition from an academic research-oriented ML model to a production-ready application. It automates the pre-qualification process for banking institutions by analyzing applicant creditworthiness through 11 key financial features.
+
+- **Primary Objective:** Create a supervised machine learning model to analyze and predict `loan_status` (Approved/Rejected) based on historical applicant profiles
+- **Key Tech Stack:** Python, Scikit-Learn, Pandas, Joblib, Streamlit
+- **Architecture:** Modular training script with an automated preprocessing pipeline and a decoupled web interface
+
 ---
-#### 🧠 Methodology
-1. **Data Loading & Cleaning**  
-   - Loaded raw CSV via `pd.read_csv("loan_approval_dataset.csv")`.  
-   - Stripped whitespace from column names to ensure consistent referencing.  
 
-2. **Feature–Target Definition**  
-   - **X**: Subset of columns:  
-     - Numeric: `no_of_dependents`, `income_annum`, `loan_amount`, `loan_term`, `cibil_score`, `residential_assets_value`, `commercial_assets_value`, `luxury_assets_value`, `bank_asset_value`.  
-     - Categorical: `education`, `self_employed`.  
-   - **y**: `loan_status`.  
+## Dataset Overview
+  - **Features**:  
+    1. `no_of_dependents` (integer): Number of dependents of the applicant.  
+    2. `education` (categorical): “Graduate” or “Not Graduate”.  
+    3. `self_employed` (categorical): “Yes” or “No”.  
+    4. `income_annum` (float): Applicant’s annual income (USD).  
+    5. `loan_amount` (float): Requested loan amount (USD).  
+    6. `loan_term` (float): Requested loan duration in months.  
+    7. `cibil_score` (float): Applicant's credit score (CIBIL).  
+    8. `residential_assets_value` (float): Value of owned residential assets (USD).  
+    9. `commercial_assets_value` (float): Value of owned commercial assets (USD).  
+    10. `luxury_assets_value` (float): Value of luxury assets (USD).  
+    11. `bank_asset_value` (float): Total bank assets (USD).  
+  - **Target Variable**: `loan_status` (binary categorical: “Approved” or “Denied”).  
 
-3. **Train/Test Split**  
-   - Partitioned data into 80% training and 20% testing with stratification on `loan_status` to preserve class ratios (`random_state=42`).  
-
-4. **Preprocessing Pipeline**  
-   - **Numeric Transformer** (`numeric_transformer`):  
-     - `SimpleImputer(strategy="mean")` to fill missing values.  
-     - `StandardScaler()` to normalize numeric features.  
-   - **Categorical Transformer** (`categorical_transformer`):  
-     - `SimpleImputer(strategy="most_frequent")` to fill missing strings.  
-     - `OneHotEncoder(handle_unknown="ignore")` to convert categories into binary indicator columns.  
-   - **ColumnTransformer** (`preprocessor`):  
-     - Applies `numeric_transformer` to numeric features.  
-     - Applies `categorical_transformer` to `education` and `self_employed`.  
-
-5. **Model Training**  
-   - Assembled a scikit-learn `Pipeline`:  
-     1. **Step “preprocessor”**: The `ColumnTransformer` defined above.  
-     2. **Step “classifier”**: `RandomForestClassifier(n_estimators=100, random_state=42)`.  
-   - Fitted the pipeline on `X_train` and `y_train`.  
-
-6. **Evaluation**  
-   - Predicted `y_pred = clf.predict(X_test)`.  
-   - Generated classification metrics (`classification_report`) including **precision**, **recall**, **F1-score**, and **accuracy** per class.  
-   - Observed strong performance with overall F1 score of 0.98 indicating robust generalization on held-out data.  
-
-7. **Artifact Serialization**  
-   - **Model**: Saved final fitted pipeline as `loan_model.joblib` using `joblib.dump()`.  
-   - **Column List**: Persisted `input_features` list as `loan_columns.joblib` for consistent feature ordering at inference time.  
-
-8. **API Deployment (FastAPI)**  
-   - Developed `ml_server.py` to serve prediction endpoints:  
-     - **Endpoint**: `POST /predict` accepts JSON payload matching `PredictionRequest` schema (fields identical to input features).  
-     - **Server Logic**:  
-       - Load `loan_model.joblib` and `loan_columns.joblib` on startup.  
-       - Reorder incoming JSON to match training feature order.  
-       - Apply pipeline’s `predict()` and return `{"loan_status": "<Approved/Denied>"}`.  
-   - **Usage**: Run via `uvicorn ml_server:app --reload` (default `localhost:8000`).  
-
-9. **Web Front-End (Streamlit)**  
-   - Created `frontend.py` as a user interface:  
-     - Users input values for each predictor via Streamlit widgets (e.g., `st.number_input`, `st.selectbox`).  
-     - On clicking “Predict”, sends a `POST` request to `http://127.0.0.1:8000/predict` with JSON payload.  
-     - Displays predicted `loan_status` with color-coded success/error feedback.  
-   - **Future Work**:  
-     - Host Streamlit app on a cloud platform (Heroku, AWS, etc.) to allow remote users to assess loan applications in real time.  
 ---
-#### 🎯 Results & Takeaways
-- **Model Performance**: Overall F1 score of 0.98. Random Forest classifier achieved high precision and recall for both “Approved” and “Denied” classes, indicating minimal bias toward either outcome.  
-- **Feature Importance**:  
-  - Top predictive features included **CIBIL score**, **annual income**, and **loan amount**, aligning with domain knowledge of credit risk assessment.  
-  - Asset values (residential, commercial, bank) provided additional signal for applicant solvency.  
-- **Operational Value**:  
-  - Financial institutions can embed this pipeline in their loan origination systems to rapidly triage low-risk candidates and flag high-risk applications.  
-  - Reduces manual review time and allows credit officers to focus on exceptions and appeals.  
+
+## Model Performance & Metrics
+
+The model was trained on a dataset of 4,269 records using a Random Forest classifier with a 80/20 stratified split and validated through 5-fold cross-validation. 
+
+| Metric | Score |
+|--------|-------|
+| Accuracy | 98.36% |
+| Precision | 98.36% |
+| Recall | 98.36% |
+| F1-Score | 0.9836 |
+| ROC-AUC | 0.9972 |
+| CV Mean | 97.60% (+/- 0.0075) |
+
+### Feature Importance (Top 5)
+
+1. **CIBIL Score:** 82.74%
+2. **Loan Term:** 5.09%
+3. **Loan Amount:** 2.87%
+4. **Luxury Assets Value:** 1.71%
+5. **Annual Income:** 1.70%
+
 ---
-#### 🔧 Technologies Used
-- **Python 3.12**  
-- **pandas & NumPy** for data ingestion and manipulation  
-- **scikit-learn** for preprocessing, model training, and evaluation  
-- **Joblib** for artifact serialization  
-- **FastAPI** for RESTful model serving  
-- **Streamlit** for interactive front-end development  
+
+## Industry Applications
+
+- **Instant Pre-Qualification:** Reducing initial screening time from days to seconds by providing real-time eligibility feedback
+- **Risk Stratification:** Categorizing applicants into risk tiers for differentiated interest rates and loan terms
+- **Regulatory Compliance:** Using feature importance and decision factors to provide transparent audit trails for lending decisions
+
 ---
-#### 🌐 Practical Application
-- **Credit Underwriting**: Automate preliminary loan decisioning to accelerate turnaround and minimize default risk.  
-- **Risk Management**: Provide explainable feature importances to credit officers for auditing and regulatory compliance.  
-- **Operational Efficiency**: Integrate with existing ERP/CRM systems (e.g., PeopleSoft, QuickBooks) to streamline data flow.
+
+## Data Disclosure & Limitations
+
+- **Data Source:** This project utilizes CIBIL scores and data records based on publicly available information from India
+- **Demonstration Only:** This system is intended for demonstration and portfolio purposes and is not suitable for actual financial deployment without further rigorous testing
+- **Expansion Potential:** While current results are strong, the model's insights would improve significantly with access to larger, proprietary banking datasets containing more diverse features such as transaction history or credit utilization ratios
+
 ---
-#### 💻 Interace
-<br/>
-<img src="https://i.imgur.com/IkjQxFL.png" width="1000" alt="Application Page 1"/>
-<img src="https://i.imgur.com/3u25rXp.png" width="1000" alt="Application Page 1"/>
-<br />
+
+## How it Works
+
+1. **Preprocessing:** Uses a `ColumnTransformer` to handle `StandardScaler` for numeric values and `OneHotEncoder` for categorical data
+2. **Imputation:** Automatically handles missing values via mean (numeric) and mode (categorical) strategies to ensure pipeline stability
+3. **Training:** Employs a `RandomForestClassifier` with balanced class weights to address the target distribution of 62% Approved vs 38% Rejected
+4. **Interface:** A Streamlit-based dark-themed UI that provides dynamic risk metrics (DTI ratio, Asset Coverage) alongside the ML prediction
+5. **Optional REST API Mode:** For enterprise integration, mobile apps, or microservices architecture, deploy the included FastAPI server (api_server.py) separately.
+
 
