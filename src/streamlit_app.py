@@ -1013,37 +1013,31 @@ def render_documentation_tab():
                         border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">⚠️</div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Data Disclosure & Limitations</span>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-        <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Data Source</h4>
-        <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
-            This project utilizes <strong>CIBIL scores</strong> and data records based on publicly available 
-            information from <strong>India</strong>.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-        <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Demonstration Only</h4>
-        <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
-            This system is intended for <strong>demonstration and portfolio purposes</strong> and is not suitable 
-            for actual financial deployment without further rigorous testing.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-        <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Expansion Potential</h4>
-        <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
-            While current results are strong, the model's insights would improve significantly with access to 
-            <strong>larger, proprietary banking datasets</strong> containing more diverse features such as 
-            <strong>transaction history</strong> or <strong>credit utilization ratios</strong>.
-        </p>
+        
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+            <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Data Source</h4>
+            <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
+                This project utilizes <strong>CIBIL scores</strong> and data records based on publicly available 
+                information from <strong>India</strong>.
+            </p>
+        </div>
+        
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+            <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Demonstration Only</h4>
+            <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
+                This system is intended for <strong>demonstration and portfolio purposes</strong> and is not suitable 
+                for actual financial deployment without further rigorous testing.
+            </p>
+        </div>
+        
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px;">
+            <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Expansion Potential</h4>
+            <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
+                While current results are strong, the model's insights would improve significantly with access to 
+                <strong>larger, proprietary banking datasets</strong> containing more diverse features such as 
+                <strong>transaction history</strong> or <strong>credit utilization ratios</strong>.
+            </p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
