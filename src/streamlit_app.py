@@ -1021,7 +1021,12 @@ def main():
     
     st.markdown("""
     <div style="text-align: center; margin-top: 60px; padding: 30px; border-top: 1px solid rgba(99, 179, 237, 0.2);">
-        <p style="font-size: 14px; color: #64748b;">© 2025 Samuel Villarreal. All Rights Reserved.</p>
+        <p style="font-size: 14px; color: #64748b;">
+            © 2025 Samuel Villarreal. All Rights Reserved.<br>
+            <a href="https://github.com/samuelvy1100/Loan-Approval-Prediction-Pipeline" target="_blank" style="color: #63b3ed; text-decoration: none;">
+                View Project on GitHub
+            </a>
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
