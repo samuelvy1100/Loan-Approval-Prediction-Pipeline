@@ -13,12 +13,13 @@ import joblib
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 import time
+import re
 
 # PAGE CONFIGURATION
 
 st.set_page_config(
     page_title="Loan Approval Pipeline",
-    page_icon="🏦",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -63,11 +64,11 @@ SELF_EMPLOYED_OPTIONS = {
 def apply_custom_css():
     st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
         .stApp {
             background: linear-gradient(135deg, #0c1929 0%, #1a365d 50%, #0f2744 100%);
-            font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
         }
         
         #MainMenu {visibility: hidden;}
@@ -82,7 +83,7 @@ def apply_custom_css():
         
         h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown {
             color: #e2e8f0 !important;
-            font-family: 'DM Sans', sans-serif !important;
+            font-family: 'Inter', sans-serif !important;
         }
         
         .stNumberInput > div > div > input,
@@ -90,13 +91,13 @@ def apply_custom_css():
         .stSelectbox > div > div > div {
             background: rgba(15, 39, 68, 0.6) !important;
             border: 1px solid rgba(99, 179, 237, 0.25) !important;
-            border-radius: 10px !important;
+            border-radius: 8px !important;
             color: white !important;
         }
         
         .stSelectbox > div > div {
             background: rgba(15, 39, 68, 0.6) !important;
-            border-radius: 10px !important;
+            border-radius: 8px !important;
         }
         
         .stSlider > div > div > div > div {
@@ -107,25 +108,31 @@ def apply_custom_css():
             background: linear-gradient(135deg, #3182ce 0%, #4299e1 100%) !important;
             color: white !important;
             border: none !important;
-            border-radius: 12px !important;
-            padding: 16px 32px !important;
+            border-radius: 8px !important;
+            padding: 14px 28px !important;
             font-weight: 600 !important;
-            font-size: 16px !important;
-            box-shadow: 0 4px 20px rgba(49, 130, 206, 0.4) !important;
+            font-size: 15px !important;
+            box-shadow: 0 4px 16px rgba(49, 130, 206, 0.35) !important;
             width: 100% !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 20px rgba(49, 130, 206, 0.45) !important;
         }
         
         .stTabs [data-baseweb="tab-list"] {
             justify-content: center !important;
             background: rgba(26, 54, 93, 0.5) !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
             padding: 6px !important;
             gap: 8px !important;
         }
         
         .stTabs [data-baseweb="tab"] {
             background: transparent !important;
-            border-radius: 8px !important;
+            border-radius: 6px !important;
             color: #90cdf4 !important;
             font-weight: 600 !important;
         }
@@ -141,7 +148,7 @@ def apply_custom_css():
         
         [data-testid="stMetricValue"] {
             color: #63b3ed !important;
-            font-size: 28px !important;
+            font-size: 26px !important;
             font-weight: 700 !important;
         }
         
@@ -152,7 +159,7 @@ def apply_custom_css():
         .streamlit-expanderHeader {
             background: rgba(26, 54, 93, 0.4) !important;
             border: 1px solid rgba(99, 179, 237, 0.15) !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
         }
         
         code {
@@ -162,7 +169,7 @@ def apply_custom_css():
         
         pre {
             background: rgba(15, 39, 68, 0.6) !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -170,13 +177,37 @@ def apply_custom_css():
 
 # HELPER FUNCTIONS
 
-def get_cibil_category(score: float) -> Tuple[str, str, str]:
-    if score >= 800: return "Excellent", "#10b981", "🌟"
-    elif score >= 750: return "Very Good", "#22c55e", "✨"
-    elif score >= 700: return "Good", "#84cc16", "👍"
-    elif score >= 650: return "Fair", "#eab308", "⚡"
-    elif score >= 550: return "Poor", "#f97316", "⚠️"
-    else: return "Very Poor", "#ef4444", "🔴"
+def get_cibil_category(score: float) -> Tuple[str, str]:
+    if score >= 800: return "Excellent", "#10b981"
+    elif score >= 750: return "Very Good", "#22c55e"
+    elif score >= 700: return "Good", "#84cc16"
+    elif score >= 650: return "Fair", "#eab308"
+    elif score >= 550: return "Poor", "#f97316"
+    else: return "Very Poor", "#ef4444"
+
+
+def parse_currency_input(value_str: str) -> float:
+    """Parse a currency string with commas into a float."""
+    if not value_str:
+        return 0.0
+    # Remove commas and dollar signs
+    cleaned = re.sub(r'[,$\s]', '', value_str)
+    try:
+        return float(cleaned)
+    except ValueError:
+        return 0.0
+
+
+def format_currency_input(value: float) -> str:
+    """Format a float as a currency string with commas."""
+    return f"{value:,.2f}"
+
+
+def format_currency_callback(key: str):
+    """Callback to format currency input with commas after user entry."""
+    if key in st.session_state:
+        value = parse_currency_input(st.session_state[key])
+        st.session_state[key] = format_currency_input(value)
 
 
 def calculate_risk_metrics(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -290,12 +321,20 @@ def format_currency(value: float) -> str:
 
 def render_header():
     st.markdown("""
-    <div style="text-align: center; padding: 20px 0 30px 0;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 16px;">
-            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #3182ce 0%, #63b3ed 100%); 
-                        border-radius: 14px; display: flex; align-items: center; justify-content: center; 
-                        font-size: 28px; font-weight: bold; color: white; box-shadow: 0 4px 20px rgba(49, 130, 206, 0.4);">
-                🏦
+    <div style="text-align: center; padding: 24px 0 36px 0;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 20px;">
+            <div style="width: 52px; height: 52px; background: linear-gradient(135deg, #3182ce 0%, #63b3ed 100%); 
+                        border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+                        box-shadow: 0 4px 20px rgba(49, 130, 206, 0.4);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 21h18"></path>
+                    <path d="M5 21V7l8-4v18"></path>
+                    <path d="M19 21V11l-6-4"></path>
+                    <path d="M9 9v.01"></path>
+                    <path d="M9 12v.01"></path>
+                    <path d="M9 15v.01"></path>
+                    <path d="M9 18v.01"></path>
+                </svg>
             </div>
             <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; 
                          background: linear-gradient(90deg, #fff 0%, #90cdf4 100%); 
@@ -303,23 +342,23 @@ def render_header():
                 Loan Approval Pipeline
             </span>
         </div>
-        <p style="font-size: 18px; color: #94a3b8; max-width: 700px; margin: 0 auto; line-height: 1.6;">
+        <p style="font-size: 17px; color: #94a3b8; max-width: 720px; margin: 0 auto; line-height: 1.7;">
             Production-ready machine learning pipeline trained on real-world banking records, delivering 
             <span style="color: #10b981; font-weight: 600;">98% predictive accuracy</span> for instant loan decisions given applicant's profile. 
             Built and ready for deployment with REST API integration, custom retraining support, and explainable risk scoring.
         </p>
-        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
             <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); 
-                         padding: 8px 20px; border-radius: 100px; font-size: 14px; color: #10b981;">
-                ✓ 98% Accuracy
+                         padding: 8px 20px; border-radius: 100px; font-size: 13px; color: #10b981; font-weight: 500;">
+                98% Accuracy
             </span>
             <span style="background: rgba(49, 130, 206, 0.15); border: 1px solid rgba(49, 130, 206, 0.3); 
-                         padding: 8px 20px; border-radius: 100px; font-size: 14px; color: #3182ce;">
-                ⚡ Real-Time Analysis
+                         padding: 8px 20px; border-radius: 100px; font-size: 13px; color: #3182ce; font-weight: 500;">
+                Real-Time Analysis
             </span>
             <span style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); 
-                         padding: 8px 20px; border-radius: 100px; font-size: 14px; color: #8b5cf6;">
-                🔒 Bank-Grade Security
+                         padding: 8px 20px; border-radius: 100px; font-size: 13px; color: #8b5cf6; font-weight: 500;">
+                Bank-Grade Security
             </span>
         </div>
     </div>
@@ -340,15 +379,37 @@ def render_predictor_tab():
     
     with col_form:
         st.markdown("""
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3182ce 0%, #4299e1 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">📝</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Loan Application Form</span>
         </div>
         """, unsafe_allow_html=True)
         
+        # Initialize session state for currency inputs
+        if "income_input" not in st.session_state:
+            st.session_state.income_input = "500,000.00"
+        if "loan_input" not in st.session_state:
+            st.session_state.loan_input = "100,000.00"
+        if "res_input" not in st.session_state:
+            st.session_state.res_input = "200,000.00"
+        if "com_input" not in st.session_state:
+            st.session_state.com_input = "0.00"
+        if "lux_input" not in st.session_state:
+            st.session_state.lux_input = "50,000.00"
+        if "bank_input" not in st.session_state:
+            st.session_state.bank_input = "100,000.00"
+        
         # Personal Information
-        st.markdown('<p style="font-size: 13px; font-weight: 600; color: #90cdf4; text-transform: uppercase; letter-spacing: 1px; margin-top: 20px;">Personal Information</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size: 12px; font-weight: 600; color: #90cdf4; text-transform: uppercase; letter-spacing: 1px; margin-top: 20px; margin-bottom: 12px;">Personal Information</p>', unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns(3)
         with p_col1:
             no_of_dependents = st.number_input("Number of Dependents", min_value=0, max_value=10, value=0)
@@ -358,32 +419,41 @@ def render_predictor_tab():
             self_employed = st.selectbox("Employment Type", options=list(SELF_EMPLOYED_OPTIONS.keys()))
         
         # Financial Information
-        st.markdown('<p style="font-size: 13px; font-weight: 600; color: #90cdf4; text-transform: uppercase; letter-spacing: 1px; margin-top: 24px;">Financial Information</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size: 12px; font-weight: 600; color: #90cdf4; text-transform: uppercase; letter-spacing: 1px; margin-top: 28px; margin-bottom: 12px;">Financial Information</p>', unsafe_allow_html=True)
         f_col1, f_col2 = st.columns(2)
         with f_col1:
-            income_annum = st.number_input("Annual Income (USD)", min_value=0.0, value=500000.0, step=10000.0, format="%.0f")
-            loan_amount = st.number_input("Loan Amount Requested (USD)", min_value=0.0, value=100000.0, step=10000.0, format="%.0f")
+            income_str = st.text_input("Annual Income (USD)", key="income_input", on_change=format_currency_callback, args=("income_input",))
+            income_annum = parse_currency_input(income_str)
+            
+            loan_str = st.text_input("Loan Amount Requested (USD)", key="loan_input", on_change=format_currency_callback, args=("loan_input",))
+            loan_amount = parse_currency_input(loan_str)
         with f_col2:
             loan_term = st.number_input("Loan Term (Months)", min_value=1, max_value=360, value=24)
             cibil_score = st.slider("CIBIL Score", min_value=300, max_value=900, value=700)
-            category, color, icon = get_cibil_category(cibil_score)
+            category, color = get_cibil_category(cibil_score)
             st.markdown(f"""
-            <div style="background: {color}22; border: 1px solid {color}55; border-radius: 10px; 
+            <div style="background: {color}22; border: 1px solid {color}55; border-radius: 8px; 
                         padding: 12px; text-align: center; margin-top: -10px;">
-                <span style="font-size: 28px; font-weight: 700; color: {color};">{cibil_score}</span>
-                <span style="font-size: 14px; color: {color}; margin-left: 12px;">{icon} {category}</span>
+                <span style="font-size: 26px; font-weight: 700; color: {color};">{cibil_score}</span>
+                <span style="font-size: 14px; color: {color}; margin-left: 12px;">{category}</span>
             </div>
             """, unsafe_allow_html=True)
         
         # Asset Declaration
-        st.markdown('<p style="font-size: 13px; font-weight: 600; color: #90cdf4; text-transform: uppercase; letter-spacing: 1px; margin-top: 24px;">Asset Declaration (USD)</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size: 12px; font-weight: 600; color: #90cdf4; text-transform: uppercase; letter-spacing: 1px; margin-top: 28px; margin-bottom: 12px;">Asset Declaration (USD)</p>', unsafe_allow_html=True)
         a_col1, a_col2 = st.columns(2)
         with a_col1:
-            residential_assets = st.number_input("Residential Property Value", min_value=0.0, value=200000.0, step=10000.0, format="%.0f")
-            commercial_assets = st.number_input("Commercial Property Value", min_value=0.0, value=0.0, step=10000.0, format="%.0f")
+            res_str = st.text_input("Residential Property Value", key="res_input", on_change=format_currency_callback, args=("res_input",))
+            residential_assets = parse_currency_input(res_str)
+            
+            com_str = st.text_input("Commercial Property Value", key="com_input", on_change=format_currency_callback, args=("com_input",))
+            commercial_assets = parse_currency_input(com_str)
         with a_col2:
-            luxury_assets = st.number_input("Luxury Assets Value", min_value=0.0, value=50000.0, step=5000.0, format="%.0f")
-            bank_assets = st.number_input("Bank Account Balance", min_value=0.0, value=100000.0, step=10000.0, format="%.0f")
+            lux_str = st.text_input("Luxury Assets Value", key="lux_input", on_change=format_currency_callback, args=("lux_input",))
+            luxury_assets = parse_currency_input(lux_str)
+            
+            bank_str = st.text_input("Bank Account Balance", key="bank_input", on_change=format_currency_callback, args=("bank_input",))
+            bank_assets = parse_currency_input(bank_str)
         
         form_data = {
             "no_of_dependents": no_of_dependents, "education": education, "self_employed": self_employed,
@@ -398,13 +468,13 @@ def render_predictor_tab():
             errors = validate_inputs(form_data)
             if errors:
                 for error in errors:
-                    st.error(f"❌ {error}")
+                    st.error(f"{error}")
             else:
                 with st.spinner("Analyzing application..."):
                     time.sleep(0.3)  # Brief delay for UX
                     result, error = predict_loan_approval(form_data)
                 if error:
-                    st.error(f"🚫 {error}")
+                    st.error(f"{error}")
                 else:
                     st.session_state["prediction_result"] = result
                     st.session_state["form_data"] = form_data
@@ -412,20 +482,26 @@ def render_predictor_tab():
     
     with col_results:
         st.markdown("""
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #22c55e 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">📊</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Risk Assessment</span>
         </div>
         """, unsafe_allow_html=True)
         
         metrics = calculate_risk_metrics(form_data)
-        category, color, icon = get_cibil_category(cibil_score)
+        category, color = get_cibil_category(cibil_score)
         score_pct = ((cibil_score - 300) / 600) * 100
         
         # CIBIL Gauge
         st.markdown(f"""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 14px; padding: 18px; margin-bottom: 16px;">
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 18px; margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <span style="font-size: 13px; color: #94a3b8;">CIBIL Score Position</span>
                 <span style="font-size: 18px; font-weight: 700; color: {color};">{cibil_score}</span>
@@ -479,19 +555,19 @@ def render_predictor_tab():
             factors = get_decision_factors(form_data, metrics)
             
             factors_html = "".join([
-                f'<div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; margin-bottom: 8px; font-size: 14px; color: #10b981;"><span>✓</span><span>{f["text"]}</span></div>' if f["positive"] 
-                else f'<div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; margin-bottom: 8px; font-size: 14px; color: #ef4444;"><span>!</span><span>{f["text"]}</span></div>'
+                f'<div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; margin-bottom: 8px; font-size: 14px; color: #10b981;"><span style="font-weight: 600;">+</span><span>{f["text"]}</span></div>' if f["positive"] 
+                else f'<div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; margin-bottom: 8px; font-size: 14px; color: #ef4444;"><span style="font-weight: 600;">-</span><span>{f["text"]}</span></div>'
                 for f in factors
             ])
             
             if is_approved:
                 st.markdown(f"""
                 <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
-                            border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 24px; text-align: center;">
-                    <div style="font-size: 32px; font-weight: 700; color: #10b981; margin-bottom: 8px;">✓ APPROVED</div>
+                            border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 14px; padding: 24px; text-align: center;">
+                    <div style="font-size: 28px; font-weight: 700; color: #10b981; margin-bottom: 8px;">APPROVED</div>
                     <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px;">High confidence prediction</div>
                     <div style="text-align: left;">
-                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; text-transform: uppercase;">Key Decision Factors</div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Key Decision Factors</div>
                         {factors_html}
                     </div>
                 </div>
@@ -499,27 +575,27 @@ def render_predictor_tab():
             else:
                 st.markdown(f"""
                 <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%);
-                            border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; padding: 24px; text-align: center;">
-                    <div style="font-size: 32px; font-weight: 700; color: #ef4444; margin-bottom: 8px;">✗ REJECTED</div>
+                            border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 14px; padding: 24px; text-align: center;">
+                    <div style="font-size: 28px; font-weight: 700; color: #ef4444; margin-bottom: 8px;">REJECTED</div>
                     <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px;">Application does not meet criteria</div>
                     <div style="text-align: left;">
-                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; text-transform: uppercase;">Key Decision Factors</div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Key Decision Factors</div>
                         {factors_html}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
         
         # Decision Guidance
-        st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; padding: 18px; margin-top: 20px; 
+        st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 12px; padding: 18px; margin-top: 20px; 
                     border: 1px solid rgba(99, 179, 237, 0.15);">
-            <div style="font-size: 14px; font-weight: 600; color: #90cdf4; margin-bottom: 12px;">💡 Decision Guidance</div>""", unsafe_allow_html=True)
+            <div style="font-size: 14px; font-weight: 600; color: #90cdf4; margin-bottom: 12px;">Decision Guidance</div>""", unsafe_allow_html=True)
         
         if cibil_score < 650:
-            st.markdown('<p style="font-size: 13px; color: #94a3b8;">⚠️ <strong style="color: #f97316;">Credit Improvement Needed:</strong> CIBIL scores below 650 significantly reduce approval chances.</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size: 13px; color: #94a3b8;"><strong style="color: #f97316;">Credit Improvement Needed:</strong> CIBIL scores below 650 significantly reduce approval chances.</p>', unsafe_allow_html=True)
         elif metrics["loan_to_income"] > 3:
-            st.markdown('<p style="font-size: 13px; color: #94a3b8;">⚠️ <strong style="color: #eab308;">High Loan-to-Income:</strong> Consider requesting a smaller loan amount.</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size: 13px; color: #94a3b8;"><strong style="color: #eab308;">High Loan-to-Income:</strong> Consider requesting a smaller loan amount.</p>', unsafe_allow_html=True)
         else:
-            st.markdown('<p style="font-size: 13px; color: #94a3b8;">✓ <strong style="color: #10b981;">Strong Application:</strong> This profile shows favorable metrics.</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size: 13px; color: #94a3b8;"><strong style="color: #10b981;">Strong Application:</strong> This profile shows favorable metrics.</p>', unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
 # FEATURES TAB
@@ -527,7 +603,7 @@ def render_predictor_tab():
 def render_features_tab():
     st.markdown("""
     <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-size: 36px; font-weight: 700; background: linear-gradient(90deg, #fff 0%, #90cdf4 50%, #63b3ed 100%);
+        <h1 style="font-size: 34px; font-weight: 700; background: linear-gradient(90deg, #fff 0%, #90cdf4 50%, #63b3ed 100%);
                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Model Feature Analysis</h1>
         <p style="font-size: 16px; color: #94a3b8; max-width: 600px; margin: 0 auto;">
             Understanding which factors drive loan approval decisions helps banks optimize risk assessment.
@@ -536,11 +612,15 @@ def render_features_tab():
     """, unsafe_allow_html=True)
     
     # Feature Importance
-    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
+    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); 
                 padding: 28px; margin-bottom: 32px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">📈</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Feature Importance Rankings</span>
         </div>""", unsafe_allow_html=True)
     
@@ -563,18 +643,18 @@ def render_features_tab():
     st.markdown(f"""
     <div style="margin-bottom: 28px; padding: 20px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-size: 18px; font-weight: 600; color: #e2e8f0;">🏆 {cibil['name']}</span>
+            <span style="font-size: 18px; font-weight: 600; color: #e2e8f0;">{cibil['name']}</span>
             <span style="font-size: 24px; font-weight: 700; color: #10b981;">{cibil['importance']:.1f}%</span>
         </div>
         <div style="height: 14px; background: rgba(99, 179, 237, 0.2); border-radius: 7px; overflow: hidden;">
             <div style="height: 100%; width: {cibil['importance']}%; background: linear-gradient(90deg, {cibil['color']} 0%, #22c55e 100%); border-radius: 7px;"></div>
         </div>
-        <p style="font-size: 13px; color: #94a3b8; margin-top: 10px;">⚡ {cibil['desc']}</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 10px;">{cibil['desc']}</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Display remaining features
-    st.markdown('<p style="font-size: 13px; font-weight: 600; color: #90cdf4; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Secondary Features (combined: 17.26%)</p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size: 12px; font-weight: 600; color: #90cdf4; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Secondary Features (combined: 17.26%)</p>', unsafe_allow_html=True)
     
     for f in features[1:]:
         st.markdown(f"""
@@ -593,7 +673,7 @@ def render_features_tab():
     # Add insight callout
     st.markdown("""
     <div style="margin-top: 24px; padding: 16px; background: rgba(251, 191, 36, 0.1); border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0;">
-        <p style="font-size: 13px; color: #fbbf24; font-weight: 600; margin-bottom: 6px;">📊 Key Insight</p>
+        <p style="font-size: 13px; color: #fbbf24; font-weight: 600; margin-bottom: 6px;">Key Insight</p>
         <p style="font-size: 13px; color: #94a3b8; margin: 0;">
             CIBIL score alone accounts for <strong style="color: #10b981;">82.74%</strong> of prediction weight. 
             This aligns with banking industry practice where credit history is the primary risk indicator. 
@@ -607,23 +687,55 @@ def render_features_tab():
     st.markdown('<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #e2e8f0;">Banking Industry Applications</h2>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
+    
+    # Icon SVGs for each application
+    icons = {
+        "Instant Pre-Qualification": '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>''',  # Lightning bolt - speed/instant
+        "Risk Stratification": '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>''',  # Bar chart - tiers/levels
+        "Portfolio Analytics": '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+            <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+        </svg>''',  # Pie chart - analytics
+        "Custom Model Training": '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>''',  # Settings/gear - customization
+        "Regulatory Compliance": '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <polyline points="9 12 11 14 15 10"></polyline>
+        </svg>''',  # Shield with check - compliance/security
+        "API Integration": '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+        </svg>'''  # Code brackets - API/development
+    }
+    
     apps = [
-        ("⚡", "Instant Pre-Qualification", "#10b981", "Real-time loan eligibility assessment, reducing processing from days to seconds."),
-        ("🎯", "Risk Stratification", "#3182ce", "Segment applicants into risk tiers for differentiated pricing and terms."),
-        ("📊", "Portfolio Analytics", "#8b5cf6", "Identify at-risk accounts before defaults occur with proactive intervention."),
-        ("🔄", "Custom Model Training", "#f59e0b", "Retrain with proprietary data to capture institution-specific patterns."),
-        ("⚖️", "Regulatory Compliance", "#ec4899", "Explainable features provide audit trails for lending decisions."),
-        ("🔗", "API Integration", "#06b6d4", "RESTful API enables seamless integration with existing systems.")
+        ("Instant Pre-Qualification", "#10b981", "Real-time loan eligibility assessment, reducing processing from days to seconds."),
+        ("Risk Stratification", "#3182ce", "Segment applicants into risk tiers for differentiated pricing and terms."),
+        ("Portfolio Analytics", "#8b5cf6", "Identify at-risk accounts before defaults occur with proactive intervention."),
+        ("Custom Model Training", "#f59e0b", "Retrain with proprietary data to capture institution-specific patterns."),
+        ("Regulatory Compliance", "#ec4899", "Explainable features provide audit trails for lending decisions."),
+        ("API Integration", "#06b6d4", "RESTful API enables seamless integration with existing systems.")
     ]
     
-    for i, (icon, title, color, desc) in enumerate(apps):
+    for i, (title, color, desc) in enumerate(apps):
         with [col1, col2, col3][i % 3]:
+            icon_svg = icons.get(title, '')
             st.markdown(f"""
-            <div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
-                        padding: 24px; margin-bottom: 20px; min-height: 200px;">
-                <div style="width: 52px; height: 52px; border-radius: 12px; background: linear-gradient(135deg, {color} 0%, {color}88 100%);
-                            display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 16px;">{icon}</div>
-                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #e2e8f0;">{title}</h3>
+            <div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); 
+                        padding: 24px; margin-bottom: 20px; min-height: 180px;">
+                <div style="width: 48px; height: 48px; border-radius: 10px; background: linear-gradient(135deg, {color} 0%, {color}88 100%);
+                            display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                    {icon_svg}
+                </div>
+                <h3 style="font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #e2e8f0;">{title}</h3>
                 <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">{desc}</p>
             </div>
             """, unsafe_allow_html=True)
@@ -633,18 +745,24 @@ def render_features_tab():
 def render_documentation_tab():
     st.markdown("""
     <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-size: 36px; font-weight: 700; background: linear-gradient(90deg, #fff 0%, #90cdf4 50%, #63b3ed 100%);
+        <h1 style="font-size: 34px; font-weight: 700; background: linear-gradient(90deg, #fff 0%, #90cdf4 50%, #63b3ed 100%);
                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Technical Documentation</h1>
         <p style="font-size: 16px; color: #94a3b8;">Implementation guide for production deployment.</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Architecture
-    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
+    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); 
                 padding: 28px; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">🏗️</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">System Architecture</span>
         </div>""", unsafe_allow_html=True)
     
@@ -668,11 +786,17 @@ def render_documentation_tab():
     
     # Methodology Section
     st.markdown("""
-    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
+    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); 
                 padding: 28px; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">🔬</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Methodology</span>
         </div>
     </div>
@@ -681,8 +805,8 @@ def render_documentation_tab():
     meth_col1, meth_col2 = st.columns(2)
     with meth_col1:
         st.markdown("""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-            <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Model Selection</h4>
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; margin-bottom: 16px;">
+            <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Model Selection</h4>
             <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
                 <strong>Random Forest Classifier</strong> selected for its interpretability, robustness to outliers, 
                 and native feature importance ranking — critical for regulatory compliance in financial services.
@@ -690,8 +814,8 @@ def render_documentation_tab():
         </div>
         """, unsafe_allow_html=True)
         st.markdown("""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px;">
-            <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Validation Strategy</h4>
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px;">
+            <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Validation Strategy</h4>
             <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
                 <strong>80/20 stratified split</strong> preserving class distribution, supplemented by 
                 <strong>5-fold cross-validation</strong> to ensure generalization and mitigate overfitting.
@@ -701,8 +825,8 @@ def render_documentation_tab():
     
     with meth_col2:
         st.markdown("""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-            <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Preprocessing Pipeline</h4>
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; margin-bottom: 16px;">
+            <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Preprocessing Pipeline</h4>
             <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
                 <strong>ColumnTransformer</strong> with dual pathways: StandardScaler + mean imputation for numeric features; 
                 OneHotEncoder + mode imputation for categorical variables.
@@ -710,8 +834,8 @@ def render_documentation_tab():
         </div>
         """, unsafe_allow_html=True)
         st.markdown("""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px;">
-            <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Class Imbalance Handling</h4>
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px;">
+            <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Class Imbalance Handling</h4>
             <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
                 <strong>Balanced class weights</strong> automatically adjust for approval/rejection ratio imbalance, 
                 preventing bias toward the majority class in predictions.
@@ -720,8 +844,8 @@ def render_documentation_tab():
         """, unsafe_allow_html=True)
     
     st.markdown("""
-    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 16px; margin-top: 16px; margin-bottom: 24px;">
-        <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Hyperparameters</h4>
+    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 16px; margin-top: 16px; margin-bottom: 24px;">
+        <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Hyperparameters</h4>
         <code style="font-size: 13px; color: #e2e8f0;">
             n_estimators=100 | max_depth=15 | min_samples_split=2 | class_weight='balanced' | random_state=42 | cv_folds=5
         </code>
@@ -730,11 +854,15 @@ def render_documentation_tab():
     
     # Training Data Section
     st.markdown("""
-    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
+    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); 
                 padding: 28px; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">📊</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Training Data</span>
         </div>
     </div>
@@ -743,19 +871,19 @@ def render_documentation_tab():
     data_col1, data_col2 = st.columns([1, 2])
     with data_col1:
         st.markdown("""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px; text-align: center;">
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; margin-bottom: 16px; text-align: center;">
             <div style="font-size: 32px; font-weight: 700; color: #63b3ed;">4,269</div>
             <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase;">Total Records</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px; text-align: center;">
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; margin-bottom: 16px; text-align: center;">
             <div style="font-size: 32px; font-weight: 700; color: #10b981;">62.1%</div>
             <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase;">Approved</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; text-align: center;">
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; text-align: center;">
             <div style="font-size: 32px; font-weight: 700; color: #ef4444;">37.9%</div>
             <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase;">Rejected</div>
         </div>
@@ -763,8 +891,8 @@ def render_documentation_tab():
     
     with data_col2:
         st.markdown("""
-        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px;">
-            <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Feature Schema (11 Input Variables)</h4>
+        <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px;">
+            <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Feature Schema (11 Input Variables)</h4>
             <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
                 <thead>
                     <tr style="border-bottom: 1px solid rgba(99, 179, 237, 0.2);">
@@ -841,9 +969,14 @@ def render_documentation_tab():
     
     # Deployment Architecture 
     st.markdown("""
-    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); padding: 28px; margin-bottom: 24px;">
+    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); padding: 28px; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #22c55e 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">🚀</div>
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #22c55e 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Deployment Architecture</span>
         </div>
     </div>
@@ -852,7 +985,7 @@ def render_documentation_tab():
     # Current Mode Box
     st.markdown("""
     <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; border-radius: 10px; margin-bottom: 16px;">
-        <p style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 6px;">✓ CURRENT: Standalone Mode</p>
+        <p style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 6px;">CURRENT: Standalone Mode</p>
         <p style="font-size: 13px; color: #94a3b8; margin: 0;">
             This app runs the ML model directly within Streamlit using cached model loading. 
         </p>
@@ -862,7 +995,7 @@ def render_documentation_tab():
     # Optional API Mode Box
     st.markdown("""
     <div style="background: rgba(99, 179, 237, 0.1); border: 1px solid rgba(99, 179, 237, 0.2); padding: 16px; border-radius: 10px; margin-bottom: 24px;">
-        <p style="font-size: 13px; color: #63b3ed; font-weight: 600; margin-bottom: 10px;">⚡ OPTIONAL: REST API Mode</p>
+        <p style="font-size: 13px; color: #63b3ed; font-weight: 600; margin-bottom: 10px;">OPTIONAL: REST API Mode</p>
         <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">
             For enterprise integration, mobile apps, or microservices architecture, 
             deploy the included FastAPI server (api_server.py) separately.
@@ -904,11 +1037,16 @@ def render_documentation_tab():
     """, unsafe_allow_html=True)
     
     # Model Performance
-    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
+    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); 
                 padding: 28px; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">📋</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M9 11H4a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1z"></path>
+                    <path d="M20 4h-5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1z"></path>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Model Performance Metrics</span>
         </div>""", unsafe_allow_html=True)
     
@@ -919,15 +1057,15 @@ def render_documentation_tab():
     ]):
         with col:
             st.markdown(f"""
-            <div style="background: {clr}15; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="background: {clr}15; border-radius: 10px; padding: 20px; text-align: center;">
                 <div style="font-size: 32px; font-weight: 700; color: {clr};">{val}</div>
-                <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase; margin-top: 4px;">{label}</div>
+                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-top: 4px;">{label}</div>
             </div>
             """, unsafe_allow_html=True)
     
     # Classification Report Table
     st.markdown("""
-    <div style="background: rgba(15, 39, 68, 0.6); border-radius: 12px; padding: 20px; margin-top: 20px;">
+    <div style="background: rgba(15, 39, 68, 0.6); border-radius: 10px; padding: 20px; margin-top: 20px;">
         <div style="font-size: 14px; font-weight: 600; color: #90cdf4; margin-bottom: 16px;">Classification Report</div>
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead>
@@ -941,14 +1079,14 @@ def render_documentation_tab():
             </thead>
             <tbody>
                 <tr style="border-bottom: 1px solid rgba(99, 179, 237, 0.1);">
-                    <td style="padding: 12px; color: #10b981; font-weight: 600;">✓ Approved</td>
+                    <td style="padding: 12px; color: #10b981; font-weight: 600;">Approved</td>
                     <td style="text-align: center; padding: 12px; color: #e2e8f0;">0.98</td>
                     <td style="text-align: center; padding: 12px; color: #e2e8f0;">0.99</td>
                     <td style="text-align: center; padding: 12px; color: #e2e8f0;">0.99</td>
                     <td style="text-align: center; padding: 12px; color: #94a3b8;">531</td>
                 </tr>
                 <tr style="border-bottom: 1px solid rgba(99, 179, 237, 0.1);">
-                    <td style="padding: 12px; color: #ef4444; font-weight: 600;">✗ Rejected</td>
+                    <td style="padding: 12px; color: #ef4444; font-weight: 600;">Rejected</td>
                     <td style="text-align: center; padding: 12px; color: #e2e8f0;">0.99</td>
                     <td style="text-align: center; padding: 12px; color: #e2e8f0;">0.97</td>
                     <td style="text-align: center; padding: 12px; color: #e2e8f0;">0.98</td>
@@ -984,11 +1122,15 @@ def render_documentation_tab():
     """, unsafe_allow_html=True)
     
     # Custom Training
-    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
+    st.markdown("""<div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); 
                 padding: 28px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">🔧</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Custom Training Instructions</span>
         </div>
         <p style="font-size: 14px; color: #94a3b8; margin-bottom: 20px;">Banks can train the model on their proprietary data:</p>
@@ -1003,19 +1145,25 @@ def render_documentation_tab():
 
     # Data Disclosure & Limitations Section
     st.markdown("""
-    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 16px; border: 1px solid rgba(99, 179, 237, 0.15); 
-                padding: 28px; margin-bottom: 24px;">
+    <div style="background: rgba(26, 54, 93, 0.4); border-radius: 14px; border: 1px solid rgba(99, 179, 237, 0.15); 
+                padding: 28px; margin-bottom: 24px; margin-top: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); 
-                        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;">⚠️</div>
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
             <span style="font-size: 20px; font-weight: 600; color: #e2e8f0;">Data Disclosure & Limitations</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("""
-    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px; margin-top: -8px;">
-        <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Data Source</h4>
+    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; margin-bottom: 16px; margin-top: -8px;">
+        <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Data Source</h4>
         <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
             This project utilizes <strong>CIBIL scores</strong> and data records based on publicly available 
             information from <strong>India</strong>.
@@ -1024,8 +1172,8 @@ def render_documentation_tab():
     """, unsafe_allow_html=True)
     
     st.markdown("""
-    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-        <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Demonstration Only</h4>
+    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; margin-bottom: 16px;">
+        <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Demonstration Only</h4>
         <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
             This system is intended for <strong>demonstration and portfolio purposes</strong> and is not suitable 
             for actual financial deployment without further rigorous testing.
@@ -1034,8 +1182,8 @@ def render_documentation_tab():
     """, unsafe_allow_html=True)
     
     st.markdown("""
-    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-        <h4 style="color: #90cdf4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Expansion Potential</h4>
+    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; margin-bottom: 24px;">
+        <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Expansion Potential</h4>
         <p style="font-size: 14px; color: #e2e8f0; line-height: 1.7; margin: 0;">
             While current results are strong, the model's insights would improve significantly with access to 
             <strong>larger, proprietary banking datasets</strong> containing more diverse features such as 
