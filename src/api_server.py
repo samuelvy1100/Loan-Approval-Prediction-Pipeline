@@ -29,9 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
-# =============================================================================
 # CONFIGURATION
-# =============================================================================
 
 logging.basicConfig(
     level=logging.INFO,
@@ -270,12 +268,8 @@ async def get_features():
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
-async def predict(request: PredictionRequest):
-    """
-    Generate loan approval prediction.
-    
-    Submit applicant data to receive an instant approval/rejection prediction.
-    """
+async def predict(request: PredictionRequest):    
+    # Submit applicant data to receive an instant approval/rejection prediction.
     if model_artifacts["pipeline"] is None:
         raise HTTPException(status_code=503, detail="Model not loaded. Please check server logs.")
     
@@ -307,7 +301,7 @@ async def predict(request: PredictionRequest):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Global exception handler for unhandled errors."""
+    # Global exception handler for unhandled errors
     logger.error(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
