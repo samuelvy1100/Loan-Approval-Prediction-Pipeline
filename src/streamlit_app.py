@@ -1,7 +1,7 @@
 """
 Loan Approval Prediction - Professional Streamlit Interface
 Standalone web interface for the loan approval prediction system.
-Dark theme design with three-tab navigation.
+Supports both standalone mode (direct model loading) and API mode (REST API integration).
 
 Author: Samuel Villarreal
 """
@@ -14,6 +14,8 @@ from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 import time
 import re
+import requests
+import os
 
 # PAGE CONFIGURATION
 
@@ -24,11 +26,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# MODEL LOADING (Cached for performance)
+# API CONFIGURATION
+# Set USE_API=True to use REST API mode, False for standalone mode
+USE_API = os.getenv("USE_API", "false").lower() == "true"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+
+# MODEL LOADING (Cached for performance) - Only used in standalone mode
 
 @st.cache_resource
 def load_model():
     """Load the trained model pipeline. Cached to avoid reloading on each interaction."""
+    if USE_API:
+        # In API mode, we don't need to load the model locally
+        return None, None, None
+    
     try:
         # Model files are in the same directory as this script (src/)
         base_path = Path(__file__).parent
@@ -44,11 +55,10 @@ def load_model():
     except Exception as e:
         return None, None, f"Error loading model: {e}"
 
-# Load model at startup
+# Load model at startup (only in standalone mode)
 MODEL_PIPELINE, MODEL_COLUMNS, MODEL_ERROR = load_model()
 
-# CONFIGURATION
-
+# CONFIGURATION MAPPINGS
 EDUCATION_OPTIONS = {
     "Graduate (Master's or higher)": " Graduate",
     "Not Graduate": " Not Graduate"
@@ -58,6 +68,62 @@ SELF_EMPLOYED_OPTIONS = {
     "Salaried Employee": " No",
     "Self-Employed": " Yes"
 }
+
+# API HELPER FUNCTIONS
+
+def check_api_health() -> Tuple[bool, str]:
+    """Check if the API server is running and healthy."""
+    try:
+        response = requests.get(f"{API_BASE_URL}/health", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("model_loaded", False), data.get("status", "unknown")
+        return False, "unhealthy"
+    except requests.exceptions.RequestException as e:
+        return False, f"Connection error: {str(e)}"
+
+
+def predict_via_api(data: Dict[str, Any]) -> Tuple[Optional[Dict], Optional[str]]:
+    """Make prediction using the REST API."""
+    try:
+        # Prepare payload for API - ensure types match API expectations
+        payload = {
+            "no_of_dependents": int(data["no_of_dependents"]),
+            "education": EDUCATION_OPTIONS[data["education"]],
+            "self_employed": SELF_EMPLOYED_OPTIONS[data["self_employed"]],
+            "income_annum": float(data["income_annum"]),
+            "loan_amount": float(data["loan_amount"]),
+            "loan_term": float(data["loan_term"]),  # API expects float
+            "cibil_score": float(data["cibil_score"]),
+            "residential_assets_value": float(data["residential_assets_value"]),
+            "commercial_assets_value": float(data["commercial_assets_value"]),
+            "luxury_assets_value": float(data["luxury_assets_value"]),
+            "bank_asset_value": float(data["bank_asset_value"])
+        }
+        
+        response = requests.post(
+            f"{API_BASE_URL}/predict",
+            json=payload,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return {"loan_status": result.get("loan_status", "Unknown")}, None
+        elif response.status_code == 422:
+            # Validation error from API
+            error_detail = response.json().get("detail", "Validation error")
+            return None, f"Validation Error: {error_detail}"
+        else:
+            error_detail = response.json().get("detail", "Unknown error")
+            return None, f"API Error ({response.status_code}): {error_detail}"
+            
+    except requests.exceptions.Timeout:
+        return None, "API request timed out. Please try again."
+    except requests.exceptions.ConnectionError:
+        return None, f"Cannot connect to API server at {API_BASE_URL}. Please ensure the server is running."
+    except Exception as e:
+        return None, f"API request failed: {str(e)}"
 
 # CUSTOM CSS
 
@@ -199,12 +265,12 @@ def parse_currency_input(value_str: str) -> float:
 
 
 def format_currency_input(value: float) -> str:
-    """Format a float as a currency string with commas."""
+    # Format a float as a currency string with commas
     return f"{value:,.2f}"
 
 
 def format_currency_callback(key: str):
-    """Callback to format currency input with commas after user entry."""
+    # Callback to format currency input with commas after user entry
     if key in st.session_state:
         value = parse_currency_input(st.session_state[key])
         st.session_state[key] = format_currency_input(value)
@@ -277,9 +343,14 @@ def validate_inputs(data: Dict[str, Any]) -> List[str]:
 
 def predict_loan_approval(data: Dict[str, Any]) -> Tuple[Optional[Dict], Optional[str]]:
     """
-    Make prediction using the loaded model directly.
-    No external API call needed - runs entirely within Streamlit.
+    Make prediction using either the loaded model directly or via REST API.
+    Mode is determined by USE_API configuration.
     """
+    # Use API mode if configured
+    if USE_API:
+        return predict_via_api(data)
+    
+    # Standalone mode - use locally loaded model
     if MODEL_PIPELINE is None:
         return None, MODEL_ERROR or "Model not loaded"
     
@@ -320,7 +391,19 @@ def format_currency(value: float) -> str:
 # RENDER HEADER
 
 def render_header():
-    st.markdown("""
+    # Determine current mode for display
+    if USE_API:
+        mode_text = "API Mode"
+        mode_color = "#06b6d4"
+        mode_bg = "rgba(6, 182, 212, 0.15)"
+        mode_border = "rgba(6, 182, 212, 0.3)"
+    else:
+        mode_text = "Standalone Mode"
+        mode_color = "#8b5cf6"
+        mode_bg = "rgba(139, 92, 246, 0.15)"
+        mode_border = "rgba(139, 92, 246, 0.3)"
+    
+    st.markdown(f"""
     <div style="text-align: center; padding: 24px 0 36px 0;">
         <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 20px;">
             <div style="width: 52px; height: 52px; background: linear-gradient(135deg, #3182ce 0%, #63b3ed 100%); 
@@ -356,9 +439,9 @@ def render_header():
                          padding: 8px 20px; border-radius: 100px; font-size: 13px; color: #3182ce; font-weight: 500;">
                 Real-Time Analysis
             </span>
-            <span style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); 
-                         padding: 8px 20px; border-radius: 100px; font-size: 13px; color: #8b5cf6; font-weight: 500;">
-                Bank-Grade Security
+            <span style="background: {mode_bg}; border: 1px solid {mode_border}; 
+                         padding: 8px 20px; border-radius: 100px; font-size: 13px; color: {mode_color}; font-weight: 500;">
+                {mode_text}
             </span>
         </div>
     </div>
@@ -367,6 +450,26 @@ def render_header():
 # PREDICTOR TAB
 
 def render_predictor_tab():
+    # Show API connection status if in API mode
+    if USE_API:
+        model_loaded, status = check_api_health()
+        if model_loaded:
+            st.markdown(f"""
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); 
+                        padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                <span style="font-size: 13px; color: #10b981;">Connected to API server at {API_BASE_URL}</span>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); 
+                        padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                <div style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></div>
+                <span style="font-size: 13px; color: #ef4444;">API server unavailable: {status}</span>
+            </div>
+            """, unsafe_allow_html=True)
+    
     with st.expander("How to Use This Tool", expanded=False):
         st.markdown("""
         1. **Enter applicant details:** Fill in personal information including education level and employment status.
@@ -982,23 +1085,54 @@ def render_documentation_tab():
     </div>
     """, unsafe_allow_html=True)
     
-    # Current Mode Box
+    # Current Mode Box - Dynamic based on USE_API setting
+    if USE_API:
+        st.markdown(f"""
+        <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 16px; border-radius: 10px; margin-bottom: 16px;">
+            <p style="font-size: 13px; color: #06b6d4; font-weight: 600; margin-bottom: 6px;">CURRENT: REST API Mode</p>
+            <p style="font-size: 13px; color: #94a3b8; margin: 0;">
+                This app is configured to use the FastAPI server at <code style="color: #90cdf4;">{API_BASE_URL}</code> for predictions.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); padding: 16px; border-radius: 10px; margin-bottom: 16px;">
+            <p style="font-size: 13px; color: #8b5cf6; font-weight: 600; margin-bottom: 6px;">CURRENT: Standalone Mode</p>
+            <p style="font-size: 13px; color: #94a3b8; margin: 0;">
+                This app runs the ML model directly within Streamlit using cached model loading. 
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Mode Configuration Instructions
     st.markdown("""
-    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; border-radius: 10px; margin-bottom: 16px;">
-        <p style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 6px;">CURRENT: Standalone Mode</p>
-        <p style="font-size: 13px; color: #94a3b8; margin: 0;">
-            This app runs the ML model directly within Streamlit using cached model loading. 
+    <div style="background: rgba(15, 39, 68, 0.4); border-radius: 10px; padding: 20px; margin-bottom: 16px;">
+        <h4 style="color: #90cdf4; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Mode Configuration</h4>
+        <p style="font-size: 13px; color: #e2e8f0; line-height: 1.7; margin-bottom: 12px;">
+            Switch between modes using environment variables:
         </p>
+        <div style="background: rgba(15, 39, 68, 0.6); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px;">
+            <p style="color: #94a3b8; margin: 0 0 8px 0;"># Standalone Mode (default)</p>
+            <p style="color: #10b981; margin: 0 0 12px 0;">USE_API=false</p>
+            <p style="color: #94a3b8; margin: 0 0 8px 0;"># REST API Mode</p>
+            <p style="color: #06b6d4; margin: 0 0 4px 0;">USE_API=true</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Optional API Mode Box
+    # API Server Instructions
     st.markdown("""
     <div style="background: rgba(99, 179, 237, 0.1); border: 1px solid rgba(99, 179, 237, 0.2); padding: 16px; border-radius: 10px; margin-bottom: 24px;">
-        <p style="font-size: 13px; color: #63b3ed; font-weight: 600; margin-bottom: 10px;">OPTIONAL: REST API Mode</p>
+        <p style="font-size: 13px; color: #63b3ed; font-weight: 600; margin-bottom: 10px;">Starting the API Server</p>
         <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">
-            For enterprise integration, mobile apps, or microservices architecture, 
-            deploy the included FastAPI server (api_server.py) separately.
+            To use REST API mode, start the FastAPI server first:
+        </p>
+        <div style="background: rgba(15, 39, 68, 0.6); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px;">
+            <p style="color: #e2e8f0; margin: 0;">python api_server.py</p>
+        </div>
+        <p style="font-size: 12px; color: #64748b; margin-top: 12px; margin-bottom: 0;">
+            Server runs on http://127.0.0.1:8000 by default. Configure with HOST and PORT environment variables.
         </p>
     </div>
     """, unsafe_allow_html=True)
